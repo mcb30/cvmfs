@@ -891,6 +891,55 @@ void WritableCatalogManager::RemoveNestedCatalog(const string &mountpoint,
 
 
 /**
+ * Swap in a new nested catalog
+ *
+ * @param mountpoint - the path of the nested catalog to be removed
+ * @param new_hash - the hash of the new nested catalog
+ * @param new_size - the size of the new nested catalog
+ */
+void WritableCatalogManager::SwapNestedCatalog(const string &mountpoint,
+                                               const shash::Any &new_hash,
+                                               const uint64_t new_size) {
+  const string nested_root_path = MakeRelativePath(mountpoint);
+
+  // Get new catalog file from stratum 0
+  string new_path;
+  shash::Any new_hash_check;
+  const LoadError load_error = LoadCatalog(PathString("", 0), new_hash,
+                                           &new_path, &new_hash_check);
+  if (load_error != kLoadNew) {
+    PANIC(kLogStderr,
+          "failed to swap in nested catalog '%s': could not load catalog (%d)",
+          nested_root_path.c_str(), load_error);
+  }
+  assert(new_hash_check == new_hash);
+
+  // Create non-attached catalog object to access counters
+  Catalog *new_catalog = Catalog::AttachFreely(mountpoint, new_path, new_hash);
+
+  SyncLock();
+  // Remove existing nested catalog
+  RemoveNestedCatalog(mountpoint, false);
+
+  // Find the parent catalog
+  WritableCatalog *parent = NULL;
+  if (!FindCatalog(nested_root_path, &parent, NULL)) {
+    PANIC(kLogStderr,
+          "failed to swap in nested catalog '%s': "
+          "mountpoint was not found in current catalog structure",
+          nested_root_path.c_str());
+  }
+
+  // Insert the new nested catalog and update counters
+  parent->InsertNestedCatalog(mountpoint, NULL, new_hash, new_size);
+  DeltaCounters delta = Counters::Diff(Counters(), new_catalog->GetCounters());
+  delta.PopulateToParent(&parent->delta_counters_);
+  delete new_catalog;
+  SyncUnlock();
+}
+
+
+/**
  * Checks if a nested catalog starts at this path.  The path must be valid.
  */
 bool WritableCatalogManager::IsTransitionPoint(const string &mountpoint) {
