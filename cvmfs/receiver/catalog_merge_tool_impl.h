@@ -193,7 +193,24 @@ bool CatalogMergeTool<RwCatalogMgr, RoCatalogMgr>::ReportModification(
     const catalog::DirectoryEntryBase* base_entry =
         static_cast<const catalog::DirectoryEntryBase*>(&entry2);
     output_catalog_mgr_->TouchDirectory(*base_entry, xattrs, rel_path.c_str());
-    if (!entry1.IsNestedCatalogMountpoint() &&
+    if (entry1.IsNestedCatalogMountpoint() &&
+        entry2.IsNestedCatalogMountpoint()) {
+      RoCatalogMgr *new_catalog_mgr =
+        CatalogDiffTool<RoCatalogMgr>::GetNewCatalogMgr();
+      PathString mountpoint;
+      shash::Any new_hash;
+      uint64_t new_size;
+      const bool found = new_catalog_mgr->LookupNested(rel_path, &mountpoint,
+                                                       &new_hash, &new_size);
+      if (!found) {
+        PANIC(kLogSyslogErr,
+              "CatalogMergeTool - nested catalog %s not found. Aborting",
+              rel_path.c_str());
+      }
+      output_catalog_mgr_->SwapNestedCatalog(std::string(rel_path.c_str()),
+                                             new_hash, new_size);
+      return true; // skip recursion into nested catalog mountpoints
+    } else if (!entry1.IsNestedCatalogMountpoint() &&
         entry2.IsNestedCatalogMountpoint()) {
       output_catalog_mgr_->CreateNestedCatalog(std::string(rel_path.c_str()));
     } else if (entry1.IsNestedCatalogMountpoint() &&
