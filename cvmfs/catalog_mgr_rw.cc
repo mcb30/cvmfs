@@ -886,6 +886,76 @@ void WritableCatalogManager::RemoveNestedCatalog(const string &mountpoint,
 
 
 /**
+ * Swap in a new nested catalog
+ *
+ * @param mountpoint - the path of the nested catalog to be removed
+ * @param new_hash - the hash of the new nested catalog
+ * @param new_size - the size of the new nested catalog
+ */
+void WritableCatalogManager::SwapNestedCatalog(const string &mountpoint,
+                                               const shash::Any &new_hash,
+                                               const uint64_t new_size) {
+  const string nested_root_path = MakeRelativePath(mountpoint);
+
+  SyncLock();
+
+  // Get new catalog file from stratum 0
+  string new_path;
+  shash::Any new_hash_check;
+  const LoadError load_error = LoadCatalog(PathString("", 0), new_hash,
+                                           &new_path, &new_hash_check);
+  if (load_error != kLoadNew) {
+    PANIC(kLogStderr,
+          "failed to swap in nested catalog '%s': could not load catalog (%d)",
+          nested_root_path.c_str(), load_error);
+  }
+  assert(new_hash_check == new_hash);
+
+  // Create non-attached catalog object to access counters
+  Catalog *new_catalog = Catalog::AttachFreely(mountpoint, new_path, new_hash);
+
+  // Find the old catalog which should be removed
+  WritableCatalog *old_catalog = NULL;
+  if (!FindCatalog(nested_root_path, &old_catalog)) {
+    PANIC(kLogStderr,
+          "failed to swap out nested catalog '%s': "
+          "mountpoint was not found in current catalog structure",
+          nested_root_path.c_str());
+  }
+
+  // Check if the found catalog is really the nested catalog to be deleted
+  assert(!old_catalog->IsRoot() && old_catalog->HasParent() &&
+         (old_catalog->mountpoint().ToString() == nested_root_path));
+
+  // Get parent catalog
+  WritableCatalog *parent = old_catalog->GetWritableParent();
+
+  // Remove old nested catalog
+  old_catalog->RemoveFromParent();
+
+  // Delete the catalog database file from the working copy
+  if (unlink(old_catalog->database_path().c_str()) != 0) {
+    PANIC(kLogStderr,
+          "unable to delete the swapped out nested catalog database file '%s'",
+          old_catalog->database_path().c_str());
+  }
+
+  // Remove the old catalog from internal data structures
+  DetachCatalog(old_catalog);
+
+  // Insert the new nested catalog and update counters
+  parent->InsertNestedCatalog(mountpoint, NULL, new_hash, new_size);
+  DeltaCounters delta = Counters::Diff(Counters(), new_catalog->GetCounters());
+  delta.PopulateToParent(&parent->delta_counters_);
+
+  // Discard new catalog (leaving it detached)
+  delete new_catalog;
+
+  SyncUnlock();
+}
+
+
+/**
  * Checks if a nested catalog starts at this path.  The path must be valid.
  */
 bool WritableCatalogManager::IsTransitionPoint(const string &mountpoint) {
