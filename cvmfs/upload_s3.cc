@@ -268,6 +268,9 @@ void *S3Uploader::MainCollectResults(void *data) {
     }
 #ifdef _POSIX_PRIORITY_SCHEDULING
     sched_yield();
+    // HACK - avoid consuming 100% CPU while uploading
+    const struct timespec hack = { 0, 10000000 };
+    nanosleep(&hack, NULL);
 #endif
   }
 
