@@ -56,7 +56,12 @@ WritableCatalogManager::WritableCatalogManager(
 {
   sync_lock_ =
     reinterpret_cast<pthread_mutex_t *>(smalloc(sizeof(pthread_mutex_t)));
-  int retval = pthread_mutex_init(sync_lock_, NULL);
+  pthread_mutexattr_t attr;
+  int retval = pthread_mutexattr_init(&attr);
+  assert(retval == 0);
+  retval = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+  assert(retval == 0);
+  retval = pthread_mutex_init(sync_lock_, &attr);
   assert(retval == 0);
   catalog_processing_lock_ =
     reinterpret_cast<pthread_mutex_t *>(smalloc(sizeof(pthread_mutex_t)));
