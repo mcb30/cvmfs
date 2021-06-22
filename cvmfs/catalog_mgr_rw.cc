@@ -910,6 +910,9 @@ void WritableCatalogManager::SwapNestedCatalog(const string &mountpoint,
 
   SyncLock();
 
+  // Remove the old nested catalog (discarding contents)
+  RemoveNestedCatalog(mountpoint, false);
+
   // Find the immediate parent catalog
   WritableCatalog *parent = NULL;
   if (!FindCatalog(parent_path, &parent)) {
@@ -918,29 +921,14 @@ void WritableCatalogManager::SwapNestedCatalog(const string &mountpoint,
           nested_root_path.c_str(), parent_path.c_str());
   }
 
-  // Get old catalog hash
+  // Check that old catalog was removed
   shash::Any old_hash;
   uint64_t old_size;
   const bool old_found = parent->FindNested(nested_root_ps, &old_hash,
                                             &old_size);
-  if (!old_found) {
+  if (old_found) {
     PANIC(kLogStderr,
-          "failed to swap nested catalog '%s': not found in parent",
-          nested_root_path.c_str());
-  }
-
-  // Check that old catalog was not already attached
-  if (parent->FindChild(nested_root_ps)) {
-    PANIC(kLogStderr,
-          "failed to swap nested catalog '%s': already attached",
-          nested_root_path.c_str());
-  }
-
-  // Load freely attached old catalog
-  UniquePtr<Catalog> old_catalog(LoadFreeCatalog(nested_root_ps, old_hash));
-  if (!old_catalog) {
-    PANIC(kLogStderr,
-          "failed to swap nested catalog '%s': failed to load old catalog",
+          "failed to swap nested catalog '%s': not removed",
           nested_root_path.c_str());
   }
 
@@ -971,8 +959,7 @@ void WritableCatalogManager::SwapNestedCatalog(const string &mountpoint,
     }
   }
 
-  // Swap catalogs
-  parent->RemoveNestedCatalog(nested_root_path, NULL);
+  // Insert new catalog
   parent->InsertNestedCatalog(nested_root_path, NULL, new_hash, new_size);
 
   // Update parent directory entry
@@ -982,7 +969,7 @@ void WritableCatalogManager::SwapNestedCatalog(const string &mountpoint,
   parent->TouchEntry(dirent, xattrs, nested_root_path);
 
   // Update counters
-  DeltaCounters delta = Counters::Diff(old_catalog->GetCounters(),
+  DeltaCounters delta = Counters::Diff(Counters(),
                                        new_catalog->GetCounters());
   delta.PopulateToParent(&parent->delta_counters_);
 
