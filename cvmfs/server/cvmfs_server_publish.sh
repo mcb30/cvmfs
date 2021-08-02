@@ -197,6 +197,7 @@ cvmfs_server_publish() {
         -N $name                                       \
         -K $CVMFS_PUBLIC_KEY                           \
         $(get_follow_http_redirects_flag)              \
+        $(get_swissknife_proxy)                        \
         $authz_file                                    \
         $log_level $tweaks_option $external_option $verbosity"
 
@@ -301,6 +302,7 @@ cvmfs_server_publish() {
       -p /etc/cvmfs/keys/${name}.pub                    \
       -f $name                                          \
       -e $hash_algorithm                                \
+      $(get_swissknife_proxy)                           \
       $(get_follow_http_redirects_flag)"
     if ! is_checked_out $name; then
       # enables magic undo tag handling
