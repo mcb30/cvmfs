@@ -87,6 +87,12 @@ Repository::Repository(const SettingsRepository &settings)
   download_mgr_ = new download::DownloadManager();
   download_mgr_->Init(16, false,
                       perf::StatisticsTemplate("download", statistics_));
+
+  if (settings.proxy() != "") {
+    download_mgr_->SetProxyChain(settings.proxy(), "",
+                                 download::DownloadManager::kSetProxyBoth);
+  }
+
   try {
     DownloadRootObjects(settings.url(), settings.fqrn(), settings.tmp_dir());
   } catch (const EPublish& e) {

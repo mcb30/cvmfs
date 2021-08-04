@@ -276,6 +276,7 @@ SettingsRepository::SettingsRepository(
   const SettingsPublisher &settings_publisher)
   : fqrn_(settings_publisher.fqrn())
   , url_(settings_publisher.url())
+  , proxy_(settings_publisher.proxy())
   , tmp_dir_(settings_publisher.transaction().spool_area().tmp_dir())
   , keychain_(settings_publisher.fqrn())
 {
@@ -286,6 +287,11 @@ SettingsRepository::SettingsRepository(
 void SettingsRepository::SetUrl(const std::string &url) {
   // TODO(jblomer): sanitiation, check availability
   url_ = url;
+}
+
+
+void SettingsRepository::SetProxy(const std::string &proxy) {
+  proxy_ = proxy;
 }
 
 
@@ -304,6 +310,7 @@ SettingsPublisher::SettingsPublisher(
   const SettingsRepository &settings_repository)
   : fqrn_(settings_repository.fqrn())
   , url_(settings_repository.url())
+  , proxy_(settings_repository.proxy())
   , owner_uid_(0)
   , owner_gid_(0)
   , whitelist_validity_days_(kDefaultWhitelistValidity)
@@ -320,6 +327,11 @@ SettingsPublisher::SettingsPublisher(
 void SettingsPublisher::SetUrl(const std::string &url) {
   // TODO(jblomer): sanitiation, check availability
   url_ = url;
+}
+
+
+void SettingsPublisher::SetProxy(const std::string &proxy) {
+  proxy_ = proxy;
 }
 
 
@@ -438,6 +450,8 @@ SettingsRepository SettingsBuilder::CreateSettingsRepository(
     settings.GetKeychain()->SetKeychainDir(arg);
   if (options_mgr_->GetValue("CVMFS_STRATUM0", &arg))
     settings.SetUrl(arg);
+  if (options_mgr_->GetValue("CVMFS_SERVER_PROXY", &arg))
+    settings.SetProxy(arg);
   // For a replica, the stratum 1 url is the "local" location, hence it takes
   // precedence over the stratum 0 url
   if (options_mgr_->GetValue("CVMFS_STRATUM1", &arg))
@@ -476,6 +490,8 @@ SettingsPublisher* SettingsBuilder::CreateSettingsPublisherFromSession() {
   std::string arg;
   if (omgr.GetValue("CVMFS_SERVER_URL", &arg))
     settings_publisher->SetUrl(arg);
+  if (omgr.GetValue("CVMFS_SERVER_PROXY", &arg))
+    settings_publisher->SetProxy(arg);
   if (omgr.GetValue("CVMFS_KEYS_DIR", &arg))
     settings_publisher->GetKeychain()->SetKeychainDir(arg);
   settings_publisher->GetTransaction()->SetLayoutRevision(
