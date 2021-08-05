@@ -85,7 +85,7 @@ Repository::Repository(const SettingsRepository &settings)
   }
 
   download_mgr_ = new download::DownloadManager();
-  download_mgr_->Init(16, false,
+  download_mgr_->Init(16,
                       perf::StatisticsTemplate("download", statistics_));
 
   if (settings.proxy() != "") {
