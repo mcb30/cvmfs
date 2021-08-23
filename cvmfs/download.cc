@@ -219,10 +219,10 @@ static size_t CallbackCurlHeader(void *ptr, size_t size, size_t nmemb,
     } else {
       LogCvmfs(kLogDownload, kLogDebug, "http status error code: %s [%d]",
                header_line.c_str(), info->http_code);
-      if (((info->http_code / 100) == 5) ||
+      if ((((info->http_code / 100) == 5) && (info->http_code != 503)) ||
           (info->http_code == 400) || (info->http_code == 404))
       {
-        // 5XX returned by host
+        // 5XX (but not 503) returned by host
         // 400: error from the GeoAPI module
         // 404: the stratum 1 does not have the newest files
         info->error_code = kFailHostHttp;
