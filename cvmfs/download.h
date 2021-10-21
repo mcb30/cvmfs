@@ -352,15 +352,23 @@ class DownloadManager {  // NOLINT(clang-analyzer-optin.performance.Padding)
 
  public:
   struct ProxyInfo {
-    ProxyInfo() { }
-    explicit ProxyInfo(const std::string &url) : url(url) { }
+    ProxyInfo()
+      : failed(0)
+    { }
+    explicit ProxyInfo(const std::string &url)
+      : url(url)
+      , failed(0)
+    { }
     ProxyInfo(const dns::Host &host, const std::string &url)
       : host(host)
       , url(url)
+      , failed(0)
     { }
     std::string Print();
     dns::Host host;
     std::string url;
+    /** Time at which this proxy failed, or 0 if not in a failed state */
+    time_t failed;
   };
 
   enum ProxySetModes {
@@ -465,9 +473,13 @@ class DownloadManager {  // NOLINT(clang-analyzer-optin.performance.Padding)
                         const unsigned expected_size,
                         std::vector<uint64_t> *reply_vals);
   void SwitchHost(JobInfo *info);
+  void SwitchProxyUnlocked(JobInfo *info);
   void SwitchProxy(JobInfo *info);
   void SetRandomProxyUnlocked();
   void RebalanceProxiesUnlocked();
+  void SwitchProxyGroupUnlocked();
+  void ResetProxiesUnlocked();
+  void ResetProxyGroupUnlocked();
   CURL *AcquireCurlHandle();
   void ReleaseCurlHandle(CURL *handle);
   void ReleaseCredential(JobInfo *info);
@@ -490,8 +502,7 @@ class DownloadManager {  // NOLINT(clang-analyzer-optin.performance.Padding)
   }
 
   inline ProxyInfo *current_proxy() const {
-    return (opt_proxy_groups_ ?
-            &((*opt_proxy_groups_)[opt_proxy_groups_current_][0]) : NULL);
+    return opt_proxy_current_;
   }
 
   Prng prng_;
@@ -547,6 +558,10 @@ class DownloadManager {  // NOLINT(clang-analyzer-optin.performance.Padding)
    */
   unsigned opt_proxy_groups_current_burned_;
   /**
+   * The current proxy selection
+   */
+  ProxyInfo *opt_proxy_current_;
+  /**
    * The index of the first fallback proxy group.  If there are none,
    *  it is set to the number of regular proxy groups.
    */
@@ -588,13 +603,26 @@ class DownloadManager {  // NOLINT(clang-analyzer-optin.performance.Padding)
   std::string proxy_template_forced_;
 
   /**
+   * Time at which proxy group was switched to a backup proxy group
+   *
    * More than one proxy group can be considered as group of primary proxies
    * followed by backup proxy groups, e.g. at another site.
-   * If opt_proxy_groups_reset_after_ is > 0, cvmfs will reset its proxy group
-   * to the first one after opt_proxy_groups_reset_after_ seconds are elapsed.
    */
   time_t opt_timestamp_backup_proxies_;
-  time_t opt_timestamp_failover_proxies_;  // failover within the same group
+  /**
+   * Time at which the oldest proxy failure occurred
+   *
+   * Used to determine when proxy failures should be considered for
+   * reset.
+   */
+  time_t opt_timestamp_failover_proxies_;
+  /**
+   * Time after which proxy failures should be reset
+   *
+   * If opt_proxy_groups_reset_after_ is > 0, cvmfs will reset its
+   * proxy group to the first one and reset recorded proxy failures
+   * after opt_proxy_groups_reset_after_ seconds have elapsed.
+   */
   unsigned opt_proxy_groups_reset_after_;
 
   /**
