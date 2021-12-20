@@ -37,16 +37,7 @@ int CmdTransaction::Main(const Options &options) {
 
   SettingsBuilder builder;
   UniquePtr<SettingsPublisher> settings;
-  try {
-    settings = builder.CreateSettingsPublisher(fqrn, true /* needs_managed */);
-  } catch (const EPublish &e) {
-    if (e.failure() == EPublish::kFailRepositoryNotFound) {
-      LogCvmfs(kLogCvmfs, kLogStderr | kLogSyslogErr, "CernVM-FS error: %s",
-               e.msg().c_str());
-      return 1;
-    }
-    throw;
-  }
+  settings = builder.CreateSettingsPublisher(fqrn, true /* needs_managed */);
   if (settings->transaction().in_enter_session()) {
     throw EPublish(
       "opening a transaction is unsupported within the ephemeral "
@@ -86,19 +77,10 @@ int CmdTransaction::Main(const Options &options) {
 
 
   UniquePtr<Publisher> publisher;
-  try {
-    publisher = new Publisher(*settings);
-    if (publisher->whitelist()->IsExpired()) {
-      throw EPublish("Repository whitelist for $name is expired",
-                     EPublish::kFailWhitelistExpired);
-    }
-  } catch (const EPublish &e) {
-    if (e.failure() == EPublish::kFailLayoutRevision ||
-        e.failure() == EPublish::kFailWhitelistExpired)
-    {
-      LogCvmfs(kLogCvmfs, kLogStderr | kLogSyslogErr, "%s", e.msg().c_str());
-      return EINVAL;
-    }
+  publisher = new Publisher(*settings);
+  if (publisher->whitelist()->IsExpired()) {
+    throw EPublish("Repository whitelist for $name is expired",
+                   EPublish::kFailWhitelistExpired);
   }
 
   double whitelist_valid_s =
@@ -115,33 +97,7 @@ int CmdTransaction::Main(const Options &options) {
     return rvi;
   }
 
-  try {
-    publisher->Transaction();
-  } catch (const EPublish &e) {
-    const char *msg_prefix = "CernVM-FS transaction error: ";
-    if (e.failure() == EPublish::kFailTransactionState) {
-      LogCvmfs(kLogCvmfs, kLogStderr | kLogSyslogErr, "%s%s",
-               msg_prefix, e.msg().c_str());
-      return EEXIST;
-    } else if (e.failure() == EPublish::kFailLeaseBusy) {
-      LogCvmfs(kLogCvmfs, kLogStderr | kLogSyslogErr, "%s%s",
-               msg_prefix, e.msg().c_str());
-      return EBUSY;
-    } else if (e.failure() == EPublish::kFailLeaseNoEntry) {
-      LogCvmfs(kLogCvmfs, kLogStderr | kLogSyslogErr, "%s%s",
-               msg_prefix, e.msg().c_str());
-      return ENOENT;
-    } else if (e.failure() == EPublish::kFailLeaseNoDir) {
-      LogCvmfs(kLogCvmfs, kLogStderr | kLogSyslogErr, "%s%s",
-               msg_prefix, e.msg().c_str());
-      return ENOTDIR;
-    } else if (e.failure() == EPublish::kFailInput) {
-      LogCvmfs(kLogCvmfs, kLogStderr | kLogSyslogErr, "%s%s",
-               msg_prefix, e.msg().c_str());
-      return EINVAL;
-    }
-    throw;
-  }
+  publisher->Transaction();
 
   publisher->session()->SetKeepAlive(true);
 

@@ -101,17 +101,13 @@ int main(int argc, char **argv) {
     publish::Command::Options options = command->ParseOptions(argc, argv);
     return command->Main(options);
   } catch (const publish::EPublish& e) {
-    if (e.failure() == publish::EPublish::kFailInvocation) {
-      LogCvmfs(kLogCvmfs, kLogStderr, "Invocation error: %s", e.msg().c_str());
-    } else if (e.failure() == publish::EPublish::kFailMissingDependency) {
-      LogCvmfs(kLogCvmfs, kLogStderr,
-               "Missing dependency: %s", e.msg().c_str());
-    } else if (e.failure() == publish::EPublish::kFailPermission) {
-      LogCvmfs(kLogCvmfs, kLogStderr,
-               "Permission error: %s", e.msg().c_str());
-    } else {
+    if (e.failure() == publish::EPublish::kFailUnspecified) {
       LogCvmfs(kLogCvmfs, kLogStderr, "(unexpected termination) %s", e.what());
+      return 1;
+    } else {
+      LogCvmfs(kLogCvmfs, kLogStderr, "%s: %s", e.name().c_str(),
+               e.msg().c_str());
+      return e.retval();
     }
-    return 1;
   }
 }

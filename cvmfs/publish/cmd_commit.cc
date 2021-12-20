@@ -38,16 +38,7 @@ int CmdCommit::Main(const Options &options) {
   builder.SetConfigPath(session_dir);
 
   UniquePtr<SettingsPublisher> settings;
-  try {
-    settings = builder.CreateSettingsPublisher(fqrn, true /* needs_managed */);
-  } catch (const EPublish &e) {
-    if (e.failure() == EPublish::kFailRepositoryNotFound) {
-      LogCvmfs(kLogCvmfs, kLogStderr | kLogSyslogErr, "CernVM-FS error: %s",
-               e.msg().c_str());
-      return 1;
-    }
-    throw;
-  }
+  settings = builder.CreateSettingsPublisher(fqrn, true /* needs_managed */);
 
   if (!SwitchCredentials(settings->owner_uid(), settings->owner_gid(),
                          false /* temporarily */))
@@ -60,19 +51,10 @@ int CmdCommit::Main(const Options &options) {
     throw EPublish("Autofs on /cvmfs has to be disabled");
 
   UniquePtr<Publisher> publisher;
-  try {
-    publisher = new Publisher(*settings);
-    if (publisher->whitelist()->IsExpired()) {
-      throw EPublish("Repository whitelist for $name is expired",
-                     EPublish::kFailWhitelistExpired);
-    }
-  } catch (const EPublish &e) {
-    if (e.failure() == EPublish::kFailLayoutRevision ||
-        e.failure() == EPublish::kFailWhitelistExpired)
-    {
-      LogCvmfs(kLogCvmfs, kLogStderr | kLogSyslogErr, "%s", e.msg().c_str());
-      return EINVAL;
-    }
+  publisher = new Publisher(*settings);
+  if (publisher->whitelist()->IsExpired()) {
+    throw EPublish("Repository whitelist for $name is expired",
+                   EPublish::kFailWhitelistExpired);
   }
 
   double whitelist_valid_s =

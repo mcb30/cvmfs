@@ -32,6 +32,8 @@ class EPublish : public std::runtime_error {
     kFailLayoutRevision,      // unsupported layout revision, migrate required
     kFailWhitelistExpired,    //
     kFailMissingDependency,   // a program or service was not found
+
+    kFailNumEntries
   };
 
   explicit EPublish(const std::string& what, EFailures f = kFailUnspecified)
@@ -41,6 +43,52 @@ class EPublish : public std::runtime_error {
   {}
 
   virtual ~EPublish() throw();
+
+  std::string name() const {
+    static const char *names[kFailNumEntries + 1] = {
+      "Unspecified error",
+      "Invalid input",
+      "Invocation error",
+      "Permission error",
+      "Transaction state incorrect",
+      "Gateway key error",
+      "Cannot connect to gateway",
+      "Corrupt session token",
+      "Lease path is busy",
+      "Lease path does not exist",
+      "Lease path is not a directory",
+      "Repository missing",
+      "Repository stratum incorrect",
+      "Unsupported layout revision",
+      "Whitelist expired",
+      "Missing dependency",
+      ""
+    };
+    return names[failure_];
+  }
+
+  int retval() const {
+    static const int retvals[kFailNumEntries + 1] = {
+      EINVAL,
+      EINVAL,
+      EINVAL,
+      EPERM,
+      EEXIST,
+      EPERM,
+      EHOSTUNREACH,
+      EPERM,
+      EBUSY,
+      ENOENT,
+      ENOTDIR,
+      ENOENT,
+      ENOTTY,
+      ENOTSUP,
+      ESTALE,
+      ENOENT,
+      0
+    };
+    return retvals[failure_];
+  }
 
   EFailures failure() const { return failure_; }
   std::string msg() const { return msg_; }
