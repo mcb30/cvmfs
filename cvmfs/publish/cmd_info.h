@@ -35,6 +35,7 @@ class CmdInfo : public Command {
       "Path to sqlite statistics output file"));
     return p;
   }
+  virtual unsigned GetMaxPlainArgs() const { return 1; }
 
   virtual int Main(const Options &options);
 };  // class CmdInfo

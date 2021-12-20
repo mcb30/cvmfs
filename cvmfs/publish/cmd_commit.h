@@ -44,6 +44,8 @@ class CmdCommit : public Command {
     return e;
   }
 
+  virtual unsigned GetMaxPlainArgs() const { return 1; }
+
   virtual int Main(const Options &options);
 };
 

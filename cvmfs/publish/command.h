@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include <cassert>
+#include <climits>
 #include <map>
 #include <string>
 #include <vector>
@@ -165,6 +166,10 @@ class Command {
    * The command needs at least so many non-parameter arguments (e.g. fqrn)
    */
   virtual unsigned GetMinPlainArgs() const { return 0; }
+  /**
+   * The command takes at most so many non-parameter arguments (e.g. fqrn)
+   */
+  virtual unsigned GetMaxPlainArgs() const { return UINT_MAX; }
   /**
    * Internal commands can be added that will be omitted from the printed list
    * of available commands.  By default, commands are visible though.

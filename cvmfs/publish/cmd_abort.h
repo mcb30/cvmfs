@@ -38,6 +38,7 @@ class CmdAbort : public Command {
       "Do not ask for confirmation"));
     return p;
   }
+  virtual unsigned GetMaxPlainArgs() const { return 1; }
 
   virtual int Main(const Options &options);
 };  // class CmdAbort

@@ -54,6 +54,7 @@ class CmdTransaction : public Command {
       "Use -U and -V as an alternative to the -T parmeter"));
     return p;
   }
+  virtual unsigned GetMaxPlainArgs() const { return 1; }
 
   virtual int Main(const Options &options);
 };  // class CmdTransaction

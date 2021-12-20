@@ -81,6 +81,7 @@ class CmdMkfs : public Command {
     return "[options] <fully qualified repository name>";
   }
   virtual unsigned GetMinPlainArgs() const { return 1; }
+  virtual unsigned GetMaxPlainArgs() const { return 1; }
 
   virtual int Main(const Options &options);
 };

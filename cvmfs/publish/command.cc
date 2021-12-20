@@ -108,6 +108,13 @@ Command::Options Command::ParseOptions(int argc, char **argv) {
     throw EPublish(GetName() + ": missing argument", EPublish::kFailInvocation);
   }
 
+  if (result.plain_args().size() > GetMaxPlainArgs()) {
+    LogCvmfs(kLogCvmfs, kLogStderr, "Usage: %s %s %s",
+             progname().c_str(), GetName().c_str(), GetUsage().c_str());
+    throw EPublish(GetName() + ": too many arguments",
+                   EPublish::kFailInvocation);
+  }
+
   return result;
 }
 

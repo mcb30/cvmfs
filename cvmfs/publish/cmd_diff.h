@@ -57,6 +57,7 @@ class CmdDiff : public Command {
       "Ignore changes that only differ in their timestamps"));
     return p;
   }
+  virtual unsigned GetMaxPlainArgs() const { return 1; }
 
   virtual int Main(const Options &options);
 };  // class CmdDiff
