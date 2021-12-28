@@ -246,6 +246,26 @@ is_mounted() {
 }
 
 
+# checks if a given path is mounted read-only
+#
+# @param mountpoint  the mountpoint to be checked
+#
+is_mounted_ro() {
+  local mountpoint="$1"
+  is_mounted "${mountpoint}" "^.* ro[, ].*$"
+}
+
+
+# checks if a given path is mounted read-write
+#
+# @param mountpoint  the mountpoint to be checked
+#
+is_mounted_rw() {
+  local mountpoint="$1"
+  is_mounted "${mountpoint}" "^.* rw[, ].*$"
+}
+
+
 # only certain characters are allowed in repository names
 #
 # @param repo_name the name to test

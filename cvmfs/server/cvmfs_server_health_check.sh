@@ -102,10 +102,10 @@ health_check() {
     fi
   else
     if ! is_in_transaction $name && \
-         is_mounted "/cvmfs/$name" "^.* rw[, ].*$"; then
+         is_mounted_rw "/cvmfs/$name"; then
       rw_should_be_rdonly=1
     elif is_in_transaction $name && \
-         is_mounted "/cvmfs/$name" "^.* ro[, ].*$"; then
+         is_mounted_ro "/cvmfs/$name"; then
       rw_should_be_rw=1
     fi
   fi
