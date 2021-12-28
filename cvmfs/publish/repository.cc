@@ -128,17 +128,24 @@ Repository::~Repository() {
 
 const history::History *Repository::history() const { return history_; }
 
-catalog::SimpleCatalogManager *Repository::GetSimpleCatalogManager() {
-  if (simple_catalog_mgr_ != NULL) return simple_catalog_mgr_;
-
-  simple_catalog_mgr_ = new catalog::SimpleCatalogManager(
-    manifest_->catalog_hash(),
+catalog::SimpleCatalogManager *Repository::CreateSimpleCatalogManager(
+  const shash::Any &hash) {
+  UniquePtr<catalog::SimpleCatalogManager> catalog_mgr;
+  catalog_mgr = new catalog::SimpleCatalogManager(
+    hash.IsNull() ? manifest_->catalog_hash() : hash,
     settings_.url(),
     settings_.tmp_dir(),
     download_mgr_,
     statistics_,
     true /* manage_catalog_files */);
-  simple_catalog_mgr_->Init();
+  catalog_mgr->Init();
+  return catalog_mgr.Release();
+}
+
+catalog::SimpleCatalogManager *Repository::GetSimpleCatalogManager() {
+  if (simple_catalog_mgr_ == NULL) {
+    simple_catalog_mgr_ = CreateSimpleCatalogManager(manifest_->catalog_hash());
+  }
   return simple_catalog_mgr_;
 }
 

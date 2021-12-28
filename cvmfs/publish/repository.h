@@ -131,6 +131,8 @@ class __attribute__((visibility("default"))) Repository : SingleCopy {
     const std::string &url,
     const std::string &fqrn,
     const std::string &tmp_dir);
+  catalog::SimpleCatalogManager *CreateSimpleCatalogManager(
+    const shash::Any &hash);
   catalog::SimpleCatalogManager *GetSimpleCatalogManager();
 
   const SettingsRepository settings_;
