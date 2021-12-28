@@ -14,15 +14,11 @@ CVMFS_OPEN_TXN=0
 
 # count open transactions in Stratum0 repositories
 for repo in ${CVMFS_SPOOL_DIR_BASE}/*; do
+  reponame=$(basename $repo)
   [   -d $repo ]                                                   || continue
-  [ ! -f ${CVMFS_CONFIG_DIR_BASE}/$(basename $repo)/replica.conf ] || continue
+  [ ! -f ${CVMFS_CONFIG_DIR_BASE}/$reponame/replica.conf ]         || continue
 
-  # CernVM-FS 2.2.0+          --> 'in_transaction.lock' file
-  # CernVM-FS 2.1.18 - 2.1.20 --> 'in_transaction' lock directory
-  # CernVM-FS 2.1.0  - 2.1.17 --> 'in_transaction' lock file
-  if [ -f ${repo}/in_transaction.lock ] || \
-     [ -d ${repo}/in_transaction      ] || \
-     [ -f ${repo}/in_transaction      ]; then
+  if grep -q " /cvmfs/${reponame} .* rw[, ]" /proc/mounts; then
     CVMFS_OPEN_TXN=$(( $CVMFS_OPEN_TXN + 1 ))
   fi
 done

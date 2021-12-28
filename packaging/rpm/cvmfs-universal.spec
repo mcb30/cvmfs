@@ -357,11 +357,10 @@ popd
 [ -d "/etc/cvmfs/repositories.d/" ] || exit 0
 
 for repo in /var/spool/cvmfs/*; do
-  [ -d $repo ] && [ ! -f /etc/cvmfs/repositories.d/$(basename $repo)/replica.conf ] || continue
+  reponame=$(basename $repo)
+  [ -d $repo ] && [ ! -f /etc/cvmfs/repositories.d/$reponame/replica.conf ] || continue
 
-  if [ -f ${repo}/in_transaction.lock ] || \
-     [ -d ${repo}/in_transaction      ] || \
-     [ -f ${repo}/in_transaction      ]; then
+  if grep -q " /cvmfs/${reponame} .* rw[, ]" /proc/mounts; then
     echo "     Found open CernVM-FS repository transactions."           >&2
     echo "     Please abort or publish them before updating CernVM-FS." >&2
     exit 1
