@@ -262,6 +262,7 @@ set (CVMFS_PUBLISH_SOURCES
   publish/cmd_help.cc
   publish/cmd_info.cc
   publish/cmd_mkfs.cc
+  publish/cmd_tag.cc
   publish/cmd_transaction.cc
   publish/cmd_util.cc
   publish/cmd_zpipe.cc
@@ -269,6 +270,7 @@ set (CVMFS_PUBLISH_SOURCES
   publish/except.cc
   publish/main.cc
   publish/settings.cc
+  repository_tag.cc
   sanitizer.cc
   signature.cc
   ssl.cc

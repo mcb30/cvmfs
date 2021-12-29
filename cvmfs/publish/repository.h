@@ -11,6 +11,7 @@
 #include "gateway_util.h"
 #include "history.h"  // for History::Tag
 #include "publish/settings.h"
+#include "repository_tag.h"
 #include "upload_spooler_result.h"
 #include "util/pointer.h"
 #include "util/single_copy.h"
@@ -298,6 +299,14 @@ class __attribute__((visibility("default"))) Publisher : public Repository {
    * the ExitShell() method.
    */
   void ExitShell();
+
+  /**
+   * Construct tag object for a given tag description, branch name,
+   * and optional hash.
+   */
+  history::History::Tag MakeTag(const RepositoryTag &tag_info,
+                                const std::string &branch,
+                                const shash::Any &root_hash);
 
   /**
    * Must not edit magic tags 'trunk' and 'trunk-previous'.
