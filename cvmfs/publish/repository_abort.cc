@@ -32,7 +32,7 @@ void Publisher::Abort() {
       "(aborting abort)", EPublish::kFailTransactionState);
   }
 
-  if (!in_transaction()) {
+  if (!IsInTransaction()) {
     if (session_->has_lease()) {
       LogCvmfs(kLogCvmfs, kLogSyslogWarn, "removing stale session token for %s",
                settings_.fqrn().c_str());
@@ -63,10 +63,6 @@ void Publisher::Abort() {
     managed_node_->ClearScratch();
     managed_node_->Mount();
   }
-
-  ServerLockFile::Release(
-    settings_.transaction().spool_area().transaction_lock());
-  in_transaction_ = false;
 }
 
 }  // namespace publish

@@ -289,6 +289,8 @@ class __attribute__((visibility("default"))) Publisher : public Repository {
   void Ingest();
   void Sync();
 
+  bool IsInTransaction();
+
   /**
    * Automatically exit the ephemeral shell after abort or commit.
    * TODO(avalenzu): Most of the logic of the enter shell is in the CmdEnter UI class. 
@@ -314,7 +316,6 @@ class __attribute__((visibility("default"))) Publisher : public Repository {
   void Migrate();
 
   const SettingsPublisher &settings() const { return settings_; }
-  bool in_transaction() const { return in_transaction_; }
   bool is_publishing() const { return is_publishing_; }
   Session *session() const { return session_.weak_ref(); }
   const upload::Spooler *spooler_files() const { return spooler_files_; }
@@ -371,7 +372,6 @@ class __attribute__((visibility("default"))) Publisher : public Repository {
    * The log level, set to kLogNone if settings_.is_silent() == true
    */
   int llvl_;
-  bool in_transaction_;
   bool is_publishing_;
   gateway::GatewayKey gw_key_;
   /**

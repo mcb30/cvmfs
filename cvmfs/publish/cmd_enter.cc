@@ -459,7 +459,6 @@ void CmdEnter::CleanupSession(
   RemoveSingle(session_dir_ + "/" + fqrn_ + "/server.conf");
   RemoveSingle(session_dir_ + "/" + fqrn_);
   RemoveSingle(session_dir_ + "/session_token");
-  RemoveSingle(session_dir_ + "/in_transaction.lock");
   RemoveSingle(session_dir_ + "/shellaction.marker");
   RemoveSingle(session_dir_);
   LogCvmfs(kLogCvmfs, kLogStdout, "[done]");

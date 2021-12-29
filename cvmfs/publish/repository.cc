@@ -628,7 +628,6 @@ Publisher::Publisher()
   : settings_("invalid.cvmfs.io")
   , statistics_publish_(new perf::StatisticsTemplate("publish", statistics_))
   , llvl_(kLogNormal)
-  , in_transaction_(false)
   , spooler_files_(NULL)
   , spooler_catalogs_(NULL)
   , catalog_mgr_(NULL)
@@ -643,7 +642,6 @@ Publisher::Publisher(const SettingsPublisher &settings)
   , settings_(settings)
   , statistics_publish_(new perf::StatisticsTemplate("publish", statistics_))
   , llvl_(settings.is_silent() ? kLogNone : kLogNormal)
-  , in_transaction_(false)
   , spooler_files_(NULL)
   , spooler_catalogs_(NULL)
   , catalog_mgr_(NULL)
@@ -703,7 +701,7 @@ Publisher::Publisher(const SettingsPublisher &settings)
   if (settings.is_managed())
     managed_node_ = new ManagedNode(this);
   CheckTransactionStatus();
-  if (in_transaction_)
+  if (IsInTransaction())
     ConstructSpoolers();
 }
 
@@ -875,11 +873,11 @@ void Publisher::SyncImpl() {
 }
 
 void Publisher::Publish() {
-  if (!in_transaction_) throw EPublish("cannot publish outside transaction");
+  if (!IsInTransaction())
+    throw EPublish("cannot publish outside transaction");
 
   PushReflog();
   PushManifest();
-  in_transaction_ = false;
 }
 
 

@@ -22,14 +22,20 @@
 
 namespace publish {
 
-void Publisher::CheckTransactionStatus() {
-  // The process that opens the transaction does not stay alive for the life
-  // time of the transaction
-  const std::string transaction_lock =
-    settings_.transaction().spool_area().transaction_lock();
-  in_transaction_ =
-    ServerLockFile::IsLocked(transaction_lock, true /* ignore_stale */);
+bool Publisher::IsInTransaction() {
+  const std::string union_mnt =
+    settings_.transaction().spool_area().union_mnt();
 
+  // Transaction is in progress if and only if the union mountpoint is
+  // mounted read-write
+  if (!IsMountPoint(union_mnt))
+    return false;
+  const FileSystemInfo fs_info = GetFileSystemInfo(union_mnt);
+  return !fs_info.is_rdonly;
+}
+
+
+void Publisher::CheckTransactionStatus() {
   const std::string publishing_lock =
     settings_.transaction().spool_area().publishing_lock();
   is_publishing_ =
@@ -60,8 +66,6 @@ void Publisher::TransactionRetry() {
     } catch (const publish::EPublish& e) {
       if (e.failure() != EPublish::kFailTransactionState) {
         session_->Drop();
-        ServerLockFile::Release(
-          settings_.transaction().spool_area().transaction_lock());
       }
 
       if ((e.failure() == EPublish::kFailTransactionState) ||
@@ -86,18 +90,13 @@ void Publisher::TransactionRetry() {
 
 
 void Publisher::TransactionImpl() {
-  if (in_transaction_) {
+  if (IsInTransaction()) {
     throw EPublish("another transaction is already open",
                    EPublish::kFailTransactionState);
   }
 
   InitSpoolArea();
 
-  // On error, Transaction() will release the transaction lock and drop
-  // the session
-  const std::string transaction_lock =
-    settings_.transaction().spool_area().transaction_lock();
-  ServerLockFile::Acquire(transaction_lock, true /* ignore_stale */);
   session_->Acquire();
 
   // We might have a valid lease for a non-existing path. Nevertheless, we run
@@ -142,7 +141,6 @@ void Publisher::TransactionImpl() {
                               settings_.transaction().template_to());
     } catch (const ECvmfsException &e) {
       std::string panic_msg = e.what();
-      ServerLockFile::Release(transaction_lock);
       // TODO(aandvalenzuela): release session token (gateway publishing)
       throw publish::EPublish("cannot clone directory tree. " + panic_msg,
                               publish::EPublish::kFailInput);
@@ -156,7 +154,6 @@ void Publisher::TransactionImpl() {
     // PushReflog();
   }
 
-  in_transaction_ = true;
   LogCvmfs(kLogCvmfs, llvl_ | kLogDebug | kLogSyslog,
            "(%s) opened transaction", settings_.fqrn().c_str());
 }

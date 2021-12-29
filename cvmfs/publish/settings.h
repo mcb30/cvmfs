@@ -111,9 +111,6 @@ class SettingsSpoolArea {
   std::string gw_session_token() const {
     return workspace_() + "/session_token";
   }
-  std::string transaction_lock() const {
-    return workspace_() + "/in_transaction.lock";
-  }
   std::string publishing_lock() const {
     return workspace_() + "/is_publishing.lock";
   }

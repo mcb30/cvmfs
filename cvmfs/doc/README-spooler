@@ -67,10 +67,6 @@ Below is an overview over the contents of the sub-directories found here:
                    as well as on stratum 1. Contains the list of entry point
                    hashes into the repository and is used by garbage collection.
 
--> in_transaction/ This is a flag directory that is created when invoking
-                   `cvmfs_server transaction`. It just states that the reposi-
-                   tory is currently in a transaction.
-
 -> is_publishing/  Before running the actual publishing process during the run
                    of `cvmfs_server publish` this flag directory is created. It
                    is used to safe-guard potential concurrent publishing actions
