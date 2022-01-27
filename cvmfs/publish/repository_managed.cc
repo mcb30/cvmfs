@@ -100,24 +100,14 @@ int Publisher::ManagedNode::Check(bool is_quiet) {
   if (marker.IsValid())
     expected_hash = marker->hash();
 
-  if (!IsMountPoint(rdonly_mnt)) {
+  shash::Any root_hash = GetMountedRootHash();
+  if (root_hash.IsNull()) {
     result |= kFailRdOnlyBroken;
-  } else {
-    const std::string root_hash_xattr = "user.root_hash";
-    std::string root_hash_str;
-    bool retval = platform_getxattr(rdonly_mnt, root_hash_xattr,
-                                    &root_hash_str);
-    if (!retval)
-      throw EPublish("cannot retrieve root hash from read-only mount point");
-    shash::Any root_hash = shash::MkFromHexPtr(shash::HexPtr(root_hash_str),
-                                               shash::kSuffixCatalog);
-
-    if (expected_hash != root_hash) {
-      if (marker.IsValid()) {
-        result |= kFailRdOnlyWrongRevision;
-      } else {
-        result |= kFailRdOnlyOutdated;
-      }
+  } else if (expected_hash != root_hash) {
+    if (marker.IsValid()) {
+      result |= kFailRdOnlyWrongRevision;
+    } else {
+      result |= kFailRdOnlyOutdated;
     }
   }
 
@@ -350,6 +340,22 @@ void Publisher::ManagedNode::AlterMountpoint(
              info_msg.c_str());
     throw EPublish(info_msg + "... fail");
   }
+}
+
+
+shash::Any Publisher::ManagedNode::GetMountedRootHash() {
+  const std::string rdonly_mnt =
+    publisher_->settings_.transaction().spool_area().readonly_mnt();
+  shash::Any hash;
+
+  // Read hash via user.root_hash xattr if mounted
+  if (IsMountPoint(rdonly_mnt)) {
+    std::string xattr =
+      publisher_->settings_.GetReadOnlyXAttr("user.root_hash");
+    hash = shash::MkFromHexPtr(shash::HexPtr(xattr), shash::kSuffixCatalog);
+  }
+
+  return hash;
 }
 
 

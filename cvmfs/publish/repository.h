@@ -218,6 +218,11 @@ class __attribute__((visibility("default"))) Publisher : public Repository {
     };
 
     void AlterMountpoint(EMountpointAlterations how, int log_level);
+    /**
+     * Get the currently mounted root hash.  Returns a catalog hash,
+     * or a null hash if the read-only mount point is not mounted.
+     */
+    shash::Any GetMountedRootHash();
     void SetRootHash(const shash::Any &hash);
 
     Publisher *publisher_;
