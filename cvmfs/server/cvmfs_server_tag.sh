@@ -230,7 +230,6 @@ cvmfs_server_tag() {
     tag_command_undo_tags="$tag_command_undo_tags -b $trunk_hash"
     $user_shell "$tag_command_undo_tags" || die "Failed to set trunk hash"
     sign_manifest $name ${new_manifest}~ || die "Failed to sign repo"
-    set_ro_root_hash $name $trunk_hash   || die "Root hash update failed"
   fi
   rm -f ${new_manifest}~
 }

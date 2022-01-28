@@ -182,7 +182,6 @@ health_check() {
       rdonly_broken=1 # ... remount happens downstream
     fi
 
-    set_ro_root_hash $name "$expected_hash" || die "failed to update root hash"
     rdonly_outdated=0 # ... remount will mount the latest revision
     rdonly_wronghash=0
   fi

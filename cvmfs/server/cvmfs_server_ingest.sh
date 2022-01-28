@@ -257,11 +257,8 @@ cvmfs_server_ingest() {
 
   cvmfs_sys_file_is_regular $manifest            || { publish_failed $name; cvmfs_server_abort -f $name; die "Manifest creation failed\n\nExecuted Command:\n$sync_command"; }
 
-  local branch_hash=
-  local trunk_hash=$(grep "^C" $manifest | tr -d C)
   if is_checked_out $name; then
-    local branch_hash=$trunk_hash
-    trunk_hash=$(get_published_root_hash $name)
+    local branch_hash=$(grep "^C" $manifest | tr -d C)
     tag_command="$tag_command -h $branch_hash"
     # write intermediate catalog hash to reflog
     sign_manifest $name $manifest "" true
@@ -323,7 +320,6 @@ cvmfs_server_ingest() {
     # write intermediate catalog hash and history to reflog
     sign_manifest $name $manifest "" true
     $user_shell "$sync_command_virtual_dir" || { publish_failed $name; cvmfs_server_abort -f $name; die "Editing .cvmfs failed\n\nExecuted Command:\n$sync_command_virtual_dir";  }
-    local trunk_hash=$(grep "^C" $manifest | tr -d C)
     $user_shell "$tag_command_undo_tags" || { publish_failed $name; cvmfs_server_abort -f $name; die "Creating undo tags\n\nExecuted Command:\n$tag_command_undo_tags";  }
   fi
 
@@ -334,7 +330,6 @@ cvmfs_server_ingest() {
   # committing newly created revision
   echo "Signing new manifest"
   sign_manifest $name $manifest      || { publish_failed $name; cvmfs_server_abort -f $name; die "Signing failed"; }
-  set_ro_root_hash $name $trunk_hash || { publish_failed $name; cvmfs_server_abort -f $name; die "Root hash update failed"; }
   if is_checked_out $name; then
     rm -f /var/spool/cvmfs/${name}/checkout
     echo "Reset to trunk on default branch"

@@ -145,12 +145,8 @@ _migrate_2_1_7() {
 
   # update repository information
   echo "--> remounting (migrated) repository"
-  local remote_hash
-  remote_hash=$(get_published_root_hash $name)
-
   run_suid_helper rw_umount $name     > /dev/null 2>&1 || die "fail! (unmounting /cvmfs/$name)"
   run_suid_helper rdonly_umount $name > /dev/null 2>&1 || die "fail! (unmounting ${CVMFS_SPOOL_DIR}/rdonly)"
-  set_ro_root_hash $name $remote_hash
   run_suid_helper rdonly_mount $name  > /dev/null 2>&1 || die "fail! (mounting ${CVMFS_SPOOL_DIR}/$name)"
   run_suid_helper rw_mount $name      > /dev/null 2>&1 || die "fail! (mounting /cvmfs/$name)"
 }

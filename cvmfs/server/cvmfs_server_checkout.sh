@@ -63,7 +63,6 @@ cvmfs_server_checkout() {
   if [ "x$tag_name" = "x" ]; then
     if [ "x$branch_name" = "x" ]; then
       # Reset to trunk
-      set_ro_root_hash $name "$(get_published_root_hash $name)" || die "failed to update root hash"
       rm -f /var/spool/cvmfs/${name}/checkout
       echo "Reset to trunk on default branch"
       return 0

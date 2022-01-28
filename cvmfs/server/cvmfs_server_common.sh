@@ -311,24 +311,39 @@ get_raw_manifest() {
 }
 
 
+# set a specific fixed catalog hash for the read-only mountpoint
+#
+# @param name              the name of the repository
+# @param root_hash         fixed catalog hash value, or empty to use current hash
 set_ro_root_hash() {
   local name=$1
   local root_hash=$2
   local client_config=/var/spool/cvmfs/${name}/client.local
 
-  load_repo_config $name
-
-  local upstream_type=$(get_upstream_type $CVMFS_UPSTREAM_STORAGE)
-
-  if [ x"$upstream_type" = xgw ]; then
-      sed -i -e "s/CVMFS_ROOT_HASH=.*//" $client_config
-  else
-      if grep -q ^CVMFS_ROOT_HASH= ${client_config}; then
-          sed -i -e "s/CVMFS_ROOT_HASH=.*/CVMFS_ROOT_HASH=${root_hash}/" $client_config
-      else
-          echo "CVMFS_ROOT_HASH=${root_hash}" >> $client_config
-      fi
+  # Get current root hash from user.root_hash attribute if no hash specified
+  if [ -z "${root_hash}" ]; then
+    root_hash=$(attr -qg root_hash /var/spool/cvmfs/${name}/rdonly)
   fi
+  [ -n "${root_hash}" ] || die "Could not get current root hash for ${name}"
+
+  # Update client.local to populate CVMFS_ROOT_HASH value
+  if grep -q ^CVMFS_ROOT_HASH= ${client_config}; then
+    sed -i -e "s/^CVMFS_ROOT_HASH=.*/CVMFS_ROOT_HASH=${root_hash}/" $client_config
+  else
+    echo "CVMFS_ROOT_HASH=${root_hash}" >> $client_config
+  fi
+}
+
+
+# clear any fixed catalog hash for the read-only mountpoint
+#
+# @param name              the name of the repository
+clear_ro_root_hash() {
+  local name=$1
+  local client_config=/var/spool/cvmfs/${name}/client.local
+
+  # Update client.local to clear CVMFS_ROOT_HASH value
+  sed -i -e "/^CVMFS_ROOT_HASH=/d" $client_config
 }
 
 
@@ -693,6 +708,7 @@ open_transaction() {
 
   is_stratum0 $name                    || die "Cannot open transaction on Stratum1"
   set_flag "$tx_flag"                  || die "Failed to create transaction flag"
+  set_ro_root_hash $name               || die "Cannot set fixed root hash on $name"
   run_suid_helper open $name           || die "Failed to make /cvmfs/$name writable"
 
   to_syslog_for_repo $name "opened transaction"
@@ -761,6 +777,9 @@ close_transaction() {
   fi
   # Prevent "argument too long" errors
   [ ! -z "$tmp_dir" ] && find "${tmp_dir}" -mindepth 1 -not -path '*/receiver*' | xargs rm -fR
+  # Clear fixed root hash unless checkout marker is still present (e.g. on abort)
+  is_checked_out $name || clear_ro_root_hash $name
+  # Perform the remount
   run_suid_helper rdonly_mount $name > /dev/null
   run_suid_helper rw_mount $name
   clear_flag "$tx_flag"
@@ -1331,7 +1350,6 @@ _run_catalog_migration() {
   fi
 
   # finalizing transaction
-  local trunk_hash=$(grep "^C" $manifest | tr -d C)
   echo "Flushing file system buffers"
   syncfs
 
@@ -1339,5 +1357,4 @@ _run_catalog_migration() {
   echo "Signing new manifest"
   chown $CVMFS_USER $manifest        || die "chmod of new manifest failed";
   sign_manifest $name $manifest      || die "Signing failed";
-  set_ro_root_hash $name $trunk_hash || die "Root hash update failed";
 }

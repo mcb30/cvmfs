@@ -114,9 +114,7 @@ cvmfs_server_rollback() {
 
   $user_shell "$rollback_command" || die "Rollback failed\n\nExecuted Command:\n$rollback_command";
 
-  local trunk_hash=$(grep "^C" ${spool_dir}/tmp/manifest | tr -d C)
   sign_manifest $name ${spool_dir}/tmp/manifest || die "Signing failed";
-  set_ro_root_hash $name $trunk_hash
 
   echo "Flushing file system buffers"
   syncfs
