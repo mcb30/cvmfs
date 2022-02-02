@@ -180,7 +180,7 @@ class __attribute__((visibility("default"))) Publisher : public Repository {
     /**
      * Re-mount /cvmfs/$fqrn read-writable
      */
-    void Open();
+    void Unlock();
     /**
      * Re-mount /cvmfs/$fqrn read-only
      */
@@ -212,7 +212,7 @@ class __attribute__((visibility("default"))) Publisher : public Repository {
       kAlterRdOnlyLazyUnmount,
       kAlterUnionMount,
       kAlterRdOnlyMount,
-      kAlterUnionOpen,
+      kAlterUnionUnlock,
       kAlterUnionLock,
       kAlterScratchWipe,
     };

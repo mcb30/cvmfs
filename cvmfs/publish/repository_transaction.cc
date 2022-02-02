@@ -63,7 +63,7 @@ void Publisher::TransactionRetry() {
   }  // while (true)
 
   if (managed_node_.IsValid())
-    managed_node_->Open();
+    managed_node_->Unlock();
 }
 
 

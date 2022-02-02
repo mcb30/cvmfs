@@ -20,8 +20,8 @@
 
 namespace publish {
 
-void Publisher::ManagedNode::Open() {
-  AlterMountpoint(kAlterUnionOpen, kLogSyslog);
+void Publisher::ManagedNode::Unlock() {
+  AlterMountpoint(kAlterUnionUnlock, kLogSyslog);
 }
 
 
@@ -253,7 +253,7 @@ int Publisher::ManagedNode::Check(bool is_quiet) {
   }
 
   if (result & kFailUnionLocked) {
-    AlterMountpoint(kAlterUnionOpen, log_flags);
+    AlterMountpoint(kAlterUnionUnlock, log_flags);
     result &= ~kFailUnionLocked;
   }
 
@@ -313,7 +313,7 @@ void Publisher::ManagedNode::AlterMountpoint(
       info_msg = "Trying to mount " + mountpoint;
       suid_helper_verb = "rdonly_mount";
       break;
-    case kAlterUnionOpen:
+    case kAlterUnionUnlock:
       mountpoint = publisher_->settings_.transaction().spool_area().union_mnt();
       info_msg = "Trying to remount " + mountpoint + " read/write";
       suid_helper_verb = "open";
