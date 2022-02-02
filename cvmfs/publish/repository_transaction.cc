@@ -23,6 +23,51 @@
 namespace publish {
 
 
+void Publisher::OpenTransaction() {
+  // Check that no other transaction is in progress
+  if (in_transaction_.IsSet()) {
+    throw EPublish("another transaction is already open",
+                   EPublish::kFailTransactionState);
+  }
+
+  // Set transaction flag
+  in_transaction_.Set();
+
+  // Prevent read-only mountpoint from changing for the duration of
+  // the transaction (e.g. due to upstream changes if we are
+  // publishing via a gateway)
+  if (managed_node_.IsValid()) {
+    shash::Any hash = managed_node_->GetMountedRootHash();
+    managed_node->SetRootHash(hash);
+  }
+
+  // Make union mountpoint writable
+  if (managed_node_.IsValid())
+    managed_node->Unlock();
+
+  LogCvmfs(kLogCvmfs, llvl_ | kLogDebug | kLogSyslog,
+           "(%s) opened transaction", settings_.fqrn().c_str());
+}
+
+
+void Publisher::CloseTransaction() {
+  // Do nothing if transaction has already been closed
+  if (!in_transaction_.IsSet())
+    return;
+
+  // Make union mountpoint read-only
+  if (managed_node_.IsValid())
+    managed_node->Lock();
+
+  // Allow read-only mountpoint to track upstream changes
+  if (managed_node_.IsValid())
+    managed_node->ClearRootHash();
+
+  // Clear transaction flag
+  in_transaction_.Clear();
+}
+
+
 void Publisher::TransactionRetry() {
   if (managed_node_.IsValid()) {
     int rvi = managed_node_->Check(false /* is_quiet */);
@@ -102,13 +147,9 @@ void Publisher::TransactionImpl() {
 
   ConstructSpoolers();
 
-  UniquePtr<CheckoutMarker> marker(CheckoutMarker::CreateFrom(
-    settings_.transaction().spool_area().checkout_marker()));
-  // TODO(jblomer): take root hash from r/o mountpoint?
-  if (marker.IsValid())
-    settings_.GetTransaction()->SetBaseHash(marker->hash());
-  else
-    settings_.GetTransaction()->SetBaseHash(manifest_->catalog_hash());
+  // Lock read-only mountpoint to current catalog revision
+  //if (managed_node_.IsValid())
+  //managed_node_->SetRootHash();
 
   if (settings_.transaction().HasTemplate()) {
     LogCvmfs(kLogCvmfs, llvl_ | kLogStdout | kLogNoLinebreak,
@@ -135,9 +176,6 @@ void Publisher::TransactionImpl() {
     // TODO(jblomer): fix-me
     // PushReflog();
   }
-
-  LogCvmfs(kLogCvmfs, llvl_ | kLogDebug | kLogSyslog,
-           "(%s) opened transaction", settings_.fqrn().c_str());
 }
 
 }  // namespace publish

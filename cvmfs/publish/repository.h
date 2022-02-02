@@ -370,6 +370,8 @@ class __attribute__((visibility("default"))) Publisher : public Repository {
 
   void CheckTagName(const std::string &name);
 
+  void OpenTransaction();
+  void CloseTransaction();
   void TransactionRetry();
   void TransactionImpl();
 

@@ -218,7 +218,6 @@ int Publisher::ManagedNode::Check(bool is_quiet) {
       result |= kFailRdOnlyBroken;
     }
 
-    SetRootHash(expected_hash);
     result &= ~kFailRdOnlyOutdated;
     result &= ~kFailRdOnlyWrongRevision;
   }
@@ -256,6 +255,7 @@ int Publisher::ManagedNode::Check(bool is_quiet) {
 
   return result;
 }
+
 
 void Publisher::ManagedNode::AlterMountpoint(
   EMountpointAlterations how, int log_level)
