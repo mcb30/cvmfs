@@ -223,7 +223,15 @@ class __attribute__((visibility("default"))) Publisher : public Repository {
      * or a null hash if the read-only mount point is not mounted.
      */
     shash::Any GetMountedRootHash();
+    /**
+     * Set a fixed root hash for future mount operations
+     */
     void SetRootHash(const shash::Any &hash);
+    /**
+     * Clear any fixed root hash and allow read-only mountpoint to
+     * track upstream changes using default client behaviour
+     */
+    void ClearRootHash();
 
     Publisher *publisher_;
   };  // class ManagedNode

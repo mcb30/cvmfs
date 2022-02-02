@@ -365,4 +365,11 @@ void Publisher::ManagedNode::SetRootHash(const shash::Any &hash) {
   SetInConfig(config_path, "CVMFS_ROOT_HASH", hash.ToString());
 }
 
+
+void Publisher::ManagedNode::ClearRootHash() {
+  const std::string config_path =
+    publisher_->settings_.transaction().spool_area().client_lconfig();
+  SetInConfig(config_path, "CVMFS_ROOT_HASH", "");
+}
+
 }  // namespace publish
